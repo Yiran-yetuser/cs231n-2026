@@ -1,0 +1,41 @@
+# ============================================================
+# cs231n 专属 .gitignore
+# 原则：代码 / 改动的 notebook / 脚本进 Git；环境 / 数据 / 编译产物不进
+# ============================================================
+
+.venv/
+env/
+*/.venv/
+
+# --- 数据集（体积大，且 a2/a3 的 datasets 是软链指向 a1，一并忽略）---
+**/cifar-10-batches-py
+**/imagenet_val_25.npz
+**/coco_captioning/
+**/emoji_data.npz
+**/text_embeddings.pt
+**/*.tar.gz
+
+# --- Cython / C 扩展编译产物（平台相关，Mac 编的 Colab 用不了）---
+**/*.so
+**/*.c
+**/build/
+**/*.egg-info/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# --- Jupyter 自动存档 ---
+.ipynb_checkpoints/
+
+# --- 日志 / 临时文件 ---
+*.log
+
+# --- macOS 垃圾 ---
+.DS_Store
+.AppleDouble
+.Spotlight-V100
+
+# --- 工具缓存（如用到 mypy/pytest/ruff）---
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
