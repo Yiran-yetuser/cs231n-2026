@@ -3,28 +3,7 @@
 Stanford CS231n (Convolutional Neural Networks for Visual Recognition) 作业代码。
 包含 assignment1 / assignment2 / assignment3。
 
----
 
-## 环境说明
-
-本仓库使用 **本地 Python 虚拟环境（venv）**，不依赖 conda。
-
-- Python 版本：3.13.12（受管运行时）
-- 虚拟环境位置：仓库根目录下的 `.venv/`（**不进 git**）
-- Jupyter 内核名：`cs231n (venv)`（已注册到本机用户）
-
-### 在本地打开作业
-
-```bash
-# 1. 进入具体作业目录（必须在 assignmentX 内启动，否则 import cs231n 失败）
-cd /Users/yyz/Documents/my_code/cs231n/assignments/assignment1
-
-# 2. 激活环境
-source /Users/yyz/Documents/my_code/cs231n/.venv/bin/activate
-
-# 3. 启动 Jupyter（浏览器自动打开，内核选 cs231n (venv)）
-jupyter notebook
-```
 
 ### 依赖清单（已在 .venv 中安装并验证）
 
