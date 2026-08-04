@@ -1,11 +1,12 @@
 from builtins import range
 from builtins import object
 import numpy as np
-from past.builtins import xrange
+
+# from past.builtins import xrange
 
 
 class KNearestNeighbor(object):
-    """ a kNN classifier with L2 distance """
+    """a kNN classifier with L2 distance"""
 
     def __init__(self):
         pass
@@ -75,7 +76,8 @@ class KNearestNeighbor(object):
                 # training point, and store the result in dists[i, j]. You should   #
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
-                pass
+
+                dists[i, j] = np.sqrt(np.sum((X[i] - self.X_train[j]) ** 2))
         return dists
 
     def compute_distances_one_loop(self, X):
@@ -95,7 +97,9 @@ class KNearestNeighbor(object):
             # points, and store the result in dists[i, :].                        #
             # Do not use np.linalg.norm().                                        #
             #######################################################################
-            pass
+
+            dists[i, :] = np.sqrt(np.sum((X[i] - self.X_train) ** 2, axis=1))
+            # ATTENTION: axis= is a must!!!!!!!!!!!!!!!!
         return dists
 
     def compute_distances_no_loops(self, X):
@@ -122,6 +126,15 @@ class KNearestNeighbor(object):
         #       and two broadcast sums.                                         #
         #########################################################################
 
+        # |x-y|^2 = |x^2 + y^2 - 2xy|
+
+        test_sq = np.sum(X**2, axis=1)
+        train_sq = np.sum(self.X_train**2, axis=1)
+
+        cross = X @ self.X_train.T
+
+        dists = np.sqrt(test_sq[:, None] + train_sq[None, :] - 2 * cross)
+
         return dists
 
     def predict_labels(self, dists, k=1):
@@ -143,6 +156,7 @@ class KNearestNeighbor(object):
             # A list of length k storing the labels of the k nearest neighbors to
             # the ith test point.
             closest_y = []
+
             #########################################################################
             # TODO:                                                                 #
             # Use the distance matrix to find the k nearest neighbors of the ith    #
@@ -150,7 +164,12 @@ class KNearestNeighbor(object):
             # neighbors. Store these labels in closest_y.                           #
             # Hint: Look up the function numpy.argsort.                             #
             #########################################################################
+            distance_i = dists[i, :]
+            nearest_indices = np.argsort(distance_i)
 
+            # select the k nearest
+            closest_neighbor_indices = nearest_indices[:k]
+            closest_y = self.y_train[closest_neighbor_indices]
 
             #########################################################################
             # TODO:                                                                 #
@@ -160,5 +179,7 @@ class KNearestNeighbor(object):
             # label.                                                                #
             #########################################################################
 
+            counts = np.bincount(closest_y.astype(int))
+            y_pred[i] = np.argmax(counts)
 
         return y_pred
