@@ -1,7 +1,8 @@
 from __future__ import print_function
 from builtins import zip
-from builtins import range
-from past.builtins import xrange
+
+# from builtins import range
+# from past.builtins import xrange
 
 import matplotlib
 import numpy as np
@@ -61,11 +62,11 @@ def extract_features(imgs, feature_fns, verbose=False):
 def rgb2gray(rgb):
     """Convert RGB image to grayscale
 
-      Parameters:
-        rgb : RGB image
+    Parameters:
+      rgb : RGB image
 
-      Returns:
-        gray : grayscale image
+    Returns:
+      gray : grayscale image
 
     """
     return np.dot(rgb[..., :3], [0.299, 0.587, 0.144])
@@ -74,18 +75,18 @@ def rgb2gray(rgb):
 def hog_feature(im):
     """Compute Histogram of Gradient (HOG) feature for an image
 
-         Modified from skimage.feature.hog
-         http://pydoc.net/Python/scikits-image/0.4.2/skimage.feature.hog
+       Modified from skimage.feature.hog
+       http://pydoc.net/Python/scikits-image/0.4.2/skimage.feature.hog
 
-       Reference:
-         Histograms of Oriented Gradients for Human Detection
-         Navneet Dalal and Bill Triggs, CVPR 2005
+     Reference:
+       Histograms of Oriented Gradients for Human Detection
+       Navneet Dalal and Bill Triggs, CVPR 2005
 
-      Parameters:
-        im : an input grayscale or rgb image
+    Parameters:
+      im : an input grayscale or rgb image
 
-      Returns:
-        feat: Histogram of Gradient (HOG) feature
+    Returns:
+      feat: Histogram of Gradient (HOG) feature
 
     """
 
@@ -103,7 +104,7 @@ def hog_feature(im):
     gy = np.zeros(image.shape)
     gx[:, :-1] = np.diff(image, n=1, axis=1)  # compute gradient on x-direction
     gy[:-1, :] = np.diff(image, n=1, axis=0)  # compute gradient on y-direction
-    grad_mag = np.sqrt(gx ** 2 + gy ** 2)  # gradient magnitude
+    grad_mag = np.sqrt(gx**2 + gy**2)  # gradient magnitude
     grad_ori = np.arctan2(gy, (gx + 1e-15)) * (180 / np.pi) + 90  # gradient orientation
 
     n_cellsx = int(np.floor(sx / cx))  # number of cells in x
@@ -156,15 +157,15 @@ def color_histogram_hsv(im, nbin=10, xmin=0, xmax=255, normalized=True):
 def color_histogram(im, nbin=10, xmin=0, xmax=255, normalized=True):
     """Compute color histogram feature for an image
 
-      Parameters:
-        im : a numpy array of grayscale or rgb image
-        nbin : number of histogram bins (default: 10)
-        xmin : minimum pixel value (default: 0)
-        xmax : maximum pixel value (deafult: 255)
-        normalized : bool flag to normalize the histogram
+    Parameters:
+      im : a numpy array of grayscale or rgb image
+      nbin : number of histogram bins (default: 10)
+      xmin : minimum pixel value (default: 0)
+      xmax : maximum pixel value (deafult: 255)
+      normalized : bool flag to normalize the histogram
 
-      Returns:
-        feat : color histogram feature
+    Returns:
+      feat : color histogram feature
 
     """
     ndim = im.ndim

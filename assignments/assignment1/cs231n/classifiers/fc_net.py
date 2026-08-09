@@ -42,7 +42,7 @@ class TwoLayerNet(object):
           initialization of the weights.
         - reg: Scalar giving L2 regularization strength.
         """
-        self.params = {}
+        self.params = {}  # 字典，用于存储网络的参数，包括权重和偏置
         self.reg = reg
 
         ############################################################################
@@ -55,6 +55,12 @@ class TwoLayerNet(object):
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
 
+        self.params["W1"] = np.random.normal(0.0, weight_scale, (input_dim, hidden_dim))
+        self.params["b1"] = np.zeros(hidden_dim)
+        self.params["W2"] = np.random.normal(
+            0.0, weight_scale, (hidden_dim, num_classes)
+        )
+        self.params["b2"] = np.zeros(num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -84,6 +90,17 @@ class TwoLayerNet(object):
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
 
+        X_reshaped = X.reshape(X.shape[0], -1)
+        W1, b1 = self.params["W1"], self.params["b1"]
+        W2, b2 = self.params["W2"], self.params["b2"]
+        z1, cache1 = affine_forward(
+            X_reshaped, W1, b1
+        )  # Affine transformation for the first layer
+        a1, cache2 = relu_forward(z1)  # ReLU activation
+        scores, cache3 = affine_forward(
+            a1, W2, b2
+        )  # Affine transformation for the second layer
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -104,6 +121,27 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
 
+        loss, dscores = softmax_loss(scores, y)
+        loss += (
+            0.5 * self.reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
+        )  # L2 regularization
+
+        # Second layer gradients
+        dx2, dW2, db2 = affine_backward(dscores, cache3)
+        # First layer gradients
+        da1 = relu_backward(dx2, cache2)
+        dx1, dW1, db1 = affine_backward(da1, cache1)
+
+        dW2 += self.reg * W2  # Regularization gradient for W2
+        dW1 += self.reg * W1  # Regularization gradient for W1
+
+        grads = {
+            "W1": dW1,
+            "b1": db1,
+            "W2": dW2,
+            "b2": db2,
+        }
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -111,24 +149,23 @@ class TwoLayerNet(object):
         return loss, grads
 
     def save(self, fname):
-      """Save model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      params = self.params
-      np.save(fpath, params)
-      print(fname, "saved.")
-    
-    def load(self, fname):
-      """Load model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      if not os.path.exists(fpath):
-        print(fname, "not available.")
-        return False
-      else:
-        params = np.load(fpath, allow_pickle=True).item()
-        self.params = params
-        print(fname, "loaded.")
-        return True
+        """Save model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        params = self.params
+        np.save(fpath, params)
+        print(fname, "saved.")
 
+    def load(self, fname):
+        """Load model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        if not os.path.exists(fpath):
+            print(fname, "not available.")
+            return False
+        else:
+            params = np.load(fpath, allow_pickle=True).item()
+            self.params = params
+            print(fname, "loaded.")
+            return True
 
 
 class FullyConnectedNet(object):
@@ -228,7 +265,7 @@ class FullyConnectedNet(object):
 
     def loss(self, X, y=None):
         """Compute loss and gradient for the fully connected net.
-        
+
         Inputs:
         - X: Array of input data of shape (N, d_1, ..., d_k)
         - y: Array of labels, of shape (N,). y[i] gives the label for X[i].
@@ -297,22 +334,21 @@ class FullyConnectedNet(object):
 
         return loss, grads
 
-
     def save(self, fname):
-      """Save model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      params = self.params
-      np.save(fpath, params)
-      print(fname, "saved.")
-    
+        """Save model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        params = self.params
+        np.save(fpath, params)
+        print(fname, "saved.")
+
     def load(self, fname):
-      """Load model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      if not os.path.exists(fpath):
-        print(fname, "not available.")
-        return False
-      else:
-        params = np.load(fpath, allow_pickle=True).item()
-        self.params = params
-        print(fname, "loaded.")
-        return True
+        """Load model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        if not os.path.exists(fpath):
+            print(fname, "not available.")
+            return False
+        else:
+            params = np.load(fpath, allow_pickle=True).item()
+            self.params = params
+            print(fname, "loaded.")
+            return True

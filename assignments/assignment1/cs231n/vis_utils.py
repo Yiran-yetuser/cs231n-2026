@@ -1,5 +1,6 @@
 from builtins import range
-from past.builtins import xrange
+
+# from past.builtins import xrange
 
 from math import sqrt, ceil
 import numpy as np
@@ -14,7 +15,7 @@ def visualize_grid(Xs, ubound=255.0, padding=1):
     - ubound: Output grid will have values scaled to the range [0, ubound]
     - padding: The number of blank pixels between elements of the grid
     """
-    (N, H, W, C) = Xs.shape
+    N, H, W, C = Xs.shape
     grid_size = int(ceil(sqrt(N)))
     grid_height = H * grid_size + padding * (grid_size - 1)
     grid_width = W * grid_size + padding * (grid_size - 1)
@@ -41,8 +42,8 @@ def visualize_grid(Xs, ubound=255.0, padding=1):
 
 
 def vis_grid(Xs):
-    """ visualize a grid of images """
-    (N, H, W, C) = Xs.shape
+    """visualize a grid of images"""
+    N, H, W, C = Xs.shape
     A = int(ceil(sqrt(N)))
     G = np.ones((A * H + A, A * W + A, C), Xs.dtype)
     G *= np.min(Xs)
@@ -62,7 +63,7 @@ def vis_grid(Xs):
 
 
 def vis_nn(rows):
-    """ visualize array of arrays of images """
+    """visualize array of arrays of images"""
     N = len(rows)
     D = len(rows[0])
     H, W, C = rows[0][0].shape
