@@ -23,7 +23,9 @@ def affine_forward(x, w, b):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    N = x.shape[0]
+    x_reshaped = x.reshape(N, -1)  # Reshape x to (N, D)
+    out = x_reshaped @ w + b  # Compute the affine transformation
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -52,6 +54,13 @@ def affine_backward(dout, cache):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
 
+    N = x.shape[0]
+    x_reshaped = x.reshape(N, -1)  # Reshape x to (N, D)
+    dx = dout @ w.T  # Gradient with respect to x
+    dx = dx.reshape(x.shape)  # Reshape dx to the original shape of x
+    dw = x_reshaped.T @ dout  # Gradient with respect to w
+    db = np.sum(dout, axis=0)  # Gradient with respect to b
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -72,7 +81,7 @@ def relu_forward(x):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    out = np.maximum(0, x)  # Apply ReLU activation
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -94,7 +103,7 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    dx = dout * (x > 0)  # Gradient of ReLU
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -119,6 +128,16 @@ def softmax_loss(x, y):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
+
+    loss = 0.0
+    num_train = x.shape[0]
+    scores = x - np.max(x, axis=1, keepdims=True)  # For numerical stability
+    exp_scores = np.exp(scores)
+    p = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)  # Softmax probabilities
+    loss = -np.sum(np.log(p[np.arange(num_train), y])) / num_train
+    dx = p.copy()
+    dx[np.arange(num_train), y] -= 1
+    dx /= num_train
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -194,7 +213,17 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
         # might prove to be helpful.                                          #
         #######################################################################
-        pass
+
+        miu = np.mean(x, axis=0)
+        var = np.var(x, axis=0)
+        x_hat = (x - miu) / np.sqrt(var + eps)
+        out = gamma * x_hat + beta
+
+        cache = (x_hat, np.sqrt(var + eps), gamma)
+
+        running_mean = momentum * running_mean + (1 - momentum) * miu
+        running_var = momentum * running_var + (1 - momentum) * var
+
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -205,7 +234,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        pass
+
+        out = gamma * (x - running_mean) / np.sqrt(running_var + eps) + beta
+
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
@@ -242,6 +273,17 @@ def batchnorm_backward(dout, cache):
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
     ###########################################################################
+    N = dout.shape[0]
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * cache[0], axis=0)
+    dx_hat = dout * cache[2]
+    dx = (
+        N * dx_hat
+        - np.sum(dx_hat, axis=0, keepdims=True)
+        - cache[0] * np.sum(dx_hat * cache[0], axis=0, keepdims=True)
+    )
+    dx /= N * cache[1]
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -272,6 +314,14 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a     #
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * cache[0], axis=0)
+    dx = (1 / cache[1]) * (
+        dout * cache[2]
+        - np.mean(dout * cache[2], axis=0)
+        - cache[0] * np.mean(dout * cache[2] * cache[0], axis=0)
+    )
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -314,6 +364,12 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
 
+    miu = np.mean(x, axis=-1, keepdims=True)
+    x_var = np.var(x, axis=-1, keepdims=True)
+    x_hat = (x - miu) / np.sqrt(x_var + eps)
+    out = gamma * x_hat + beta
+    cache = (x_hat, np.sqrt(x_var + eps), gamma)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -343,6 +399,15 @@ def layernorm_backward(dout, cache):
     # implementation of batch normalization. The hints to the forward pass    #
     # still apply!                                                            #
     ###########################################################################
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * cache[0], axis=0)
+    dx_hat = dout * cache[2]
+    dx = (1 / cache[1]) * (
+        dx_hat
+        - np.mean(dx_hat, axis=-1, keepdims=True)
+        - cache[0] * np.mean(dx_hat * cache[0], axis=-1, keepdims=True)
+    )
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -612,7 +677,7 @@ def spatial_batchnorm_backward(dout, cache):
 
 def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     """Computes the forward pass for spatial group normalization.
-    
+
     In contrast to layer normalization, group normalization splits each entry in the data into G
     contiguous pieces, which it then normalizes independently. Per-feature shifting and scaling
     are then applied to the data, in a manner identical to that of batch normalization and layer
