@@ -133,7 +133,7 @@ class CaptioningRNN:
         #     array of shape (N, T, V).                                            #
         # (5) Use (temporal) softmax to compute loss using captions_out, ignoring  #
         #     the points where the output word is <NULL> using the mask above.     #
-        #                                                                          #       
+        #                                                                          #
         # Please ensure that your implementation is agnostic of the input tensors  #
         # data types.                                                              #
         #                                                                          #
@@ -141,6 +141,17 @@ class CaptioningRNN:
         #                                                                          #
         # You also don't have to implement the backward pass.                      #
         ############################################################################
+
+        h0 = features @ W_proj + b_proj  # (N, H)
+        x_embed = word_embedding_forward(captions_in, W_embed)  # (N, T, W)
+        if self.cell_type == "rnn":
+            h = rnn_forward(x_embed, h0, Wx, Wh, b)  # (N, T, H)
+        elif self.cell_type == "lstm":
+            h = lstm_forward(x_embed, h0, Wx, Wh, b)  # (N, T, H)
+        else:
+            raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+        scores = temporal_affine_forward(h, W_vocab, b_vocab)  # (N, T, V)
+        loss = temporal_softmax_loss(scores, captions_out, mask)
 
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -205,6 +216,16 @@ class CaptioningRNN:
         # NOTE: we are still working over minibatches in this function. Also if   #
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
+
+        h = features @ W_proj + b_proj  # (N, H)
+        word = torch.full((N,), self._start, dtype=torch.long)  # (N,)
+
+        for t in range(max_length):
+            x_embed = W_embed[word]  # (N, W)
+            h = rnn_step_forward(x_embed, h, Wx, Wh, b)  # (N, H)
+            scores = h @ W_vocab + b_vocab  # (N, V)
+            word = torch.argmax(scores, dim=1)  # (N,)
+            captions[:, t] = word
 
         ############################################################################
         #                             END OF YOUR CODE                             #
