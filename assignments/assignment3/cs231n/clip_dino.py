@@ -1,5 +1,8 @@
+from matplotlib import axis
 from tensorflow.python.framework.ops import device_v2
+from tensorflow_datasets.core.features import text_feature
 import torch
+from torch._prims_common import Dim
 import torch.nn as nn
 import numpy as np
 import clip
@@ -26,7 +29,15 @@ def get_similarity_no_loop(text_features, image_features):
     ############################################################################
     # TODO: Compute the cosine similarity. Do NOT use for loops.               #
     ############################################################################
+    
+    text_features_norm = torch.linalg.norm(text_features, dim=1, keepdim=True) # (N, 1)
+    image_features_norm = torch.linalg.norm(image_features, dim=1, keepdim=True) # (M, 1)
 
+    similarity = text_features @ image_features.T
+
+    similarity = similarity / text_features_norm
+    similarity = similarity / image_features_norm.T
+    
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -63,6 +74,23 @@ def clip_zero_shot_classifier(clip_model, clip_preprocess, images,
     # TODO: Find the class labels for images.                                  #
     ############################################################################
 
+    # image->tensor, text->token
+    image_tensors = torch.stack([clip_preprocess(Image.fromarray(img)) for img in images]).to(device)
+    text_tokens = clip.tokenize(class_texts).to(device)
+
+    image_features = clip_model.encode_image(image_tensors)
+    text_features = clip_model.encode_text(text_tokens)
+
+    # normalization
+    image_features_norm = image_features / image_features.norm(dim=-1, keepdim=True)
+    text_features_norm = text_features / text_features.norm(dim=-1, keepdim=True)
+
+    similarity = image_features_norm @ text_features_norm.T
+    pred_indices = similarity.argmax(dim=-1)
+
+    pred_classes = [class_texts[idx] for idx in pred_indices.tolist()]
+
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -91,6 +119,17 @@ class CLIPImageRetriever:
         # similarity function for most compute-optimal implementation.#
         ############################################################################
 
+        self.model = clip_model
+        self.preprocess = clip_preprocess
+        self.device = device
+
+        image_tensors = torch.stack(
+            [self.preprocess(Image.fromarray(img)) for img in images]
+        ).to(device)
+
+        image_features = self.model.encode_image(image_tensors)
+        self.image_features_norm = image_features / image_features.norm(dim=-1, keepdim=True)
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -114,6 +153,15 @@ class CLIPImageRetriever:
         # TODO: Retrieve the indices of top-k images.                              #
         ############################################################################
 
+        text_tokens = clip.tokenize([query]).to(self.device)
+        text_features = self.model.encode_text(text_tokens)
+        text_features_norm = text_features / text_features.norm(dim=-1, keepdim=True)
+
+        similarity = text_features_norm @ self.image_features_norm.T  # (1, N)
+
+        topk = similarity.squeeze(0).topk(k)
+        top_indices = topk.indices.tolist()
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -231,6 +279,21 @@ class DINOSegmentation:
         # It can be a linear layer or two layer neural network.                    #
         ############################################################################
 
+        self.device = device
+
+        hidden_dim = 256
+        # input: inp_dim, output: num_classes
+        self.model = nn.Sequential(
+            nn.Linear(inp_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_classes)
+        ).to(device)
+
+        # self.model = nn.Linear(inp_dim, num_classes).to(self.device)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr = 1e-3)
+        self.criterion = nn.CrossEntropyLoss()
+
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -247,6 +310,21 @@ class DINOSegmentation:
         ############################################################################
         # TODO: Train your model for `num_iters` steps.                            #
         ############################################################################
+
+        X_train = X_train.to(self.device)
+        Y_train = Y_train.to(self.device)
+
+        for i in range(num_iters):
+            scores = self.model(X_train)
+            loss = self.criterion(scores, Y_train)
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            # print loss every 100 times
+            if (i + 1) % 100 == 0:
+                print(f"Iteration {i+1}/{num_iters}, Loss: {loss.item():.4f}")
 
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -267,6 +345,10 @@ class DINOSegmentation:
         ############################################################################
         # TODO: Train your model for `num_iters` steps.                            #
         ############################################################################
+
+        X_test = X_test.to(self.device)
+        scores = self.model(X_test)
+        pred_classes = scores.argmax(dim=1)  # (N,)
 
         ############################################################################
         #                             END OF YOUR CODE                             #
