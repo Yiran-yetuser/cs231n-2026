@@ -5,7 +5,8 @@ from builtins import range
 from builtins import object
 import numpy as np
 from ..classifiers.softmax import *
-from past.builtins import xrange
+
+# from past.builtins import xrange
 
 
 class LinearClassifier(object):
@@ -65,6 +66,11 @@ class LinearClassifier(object):
             # replacement is faster than sampling without replacement.              #
             #########################################################################
 
+            idx = np.random.choice(num_train, batch_size, replace=True)
+
+            # use fancy indexing to select random elements and their corresponding labels
+            X_batch = X[idx]
+            y_batch = y[idx]
 
             # evaluate loss and gradient
             loss, grad = self.loss(X_batch, y_batch, reg)
@@ -75,7 +81,7 @@ class LinearClassifier(object):
             # TODO:                                                                 #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
-
+            self.W -= learning_rate * grad
 
             if verbose and it % 100 == 0:
                 print("iteration %d / %d: loss %f" % (it, num_iters, loss))
@@ -101,7 +107,8 @@ class LinearClassifier(object):
         # TODO:                                                                   #
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
-
+        scores = X.dot(self.W)
+        y_pred = np.argmax(scores, axis=1)
         return y_pred
 
     def loss(self, X_batch, y_batch, reg):
@@ -122,34 +129,34 @@ class LinearClassifier(object):
         pass
 
     def save(self, fname):
-      """Save model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      params = {"W": self.W}
-      np.save(fpath, params)
-      print(fname, "saved.")
-    
+        """Save model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        params = {"W": self.W}
+        np.save(fpath, params)
+        print(fname, "saved.")
+
     def load(self, fname):
-      """Load model parameters."""
-      fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
-      if not os.path.exists(fpath):
-        print(fname, "not available.")
-        return False
-      else:
-        params = np.load(fpath, allow_pickle=True).item()
-        self.W = params["W"]
-        print(fname, "loaded.")
-        return True
+        """Load model parameters."""
+        fpath = os.path.join(os.path.dirname(__file__), "../saved/", fname)
+        if not os.path.exists(fpath):
+            print(fname, "not available.")
+            return False
+        else:
+            params = np.load(fpath, allow_pickle=True).item()
+            self.W = params["W"]
+            print(fname, "loaded.")
+            return True
 
 
 class LinearSVM(LinearClassifier):
-    """ A subclass that uses the Multiclass SVM loss function """
+    """A subclass that uses the Multiclass SVM loss function"""
 
     def loss(self, X_batch, y_batch, reg):
         return svm_loss_vectorized(self.W, X_batch, y_batch, reg)
 
 
 class Softmax(LinearClassifier):
-    """ A subclass that uses the Softmax + Cross-entropy loss function """
+    """A subclass that uses the Softmax + Cross-entropy loss function"""
 
     def loss(self, X_batch, y_batch, reg):
         return softmax_loss_vectorized(self.W, X_batch, y_batch, reg)

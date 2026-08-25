@@ -28,6 +28,10 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
 
+    N = x.shape[0]
+    x_reshaped = x.reshape(N, -1)  # Reshape x to (N, D)
+    out = x_reshaped @ w + b  # Compute the affine transformation
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -57,6 +61,13 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
 
+    N = x.shape[0]
+    x_reshaped = x.reshape(N, -1)  # Reshape x to (N, D)
+    dx = dout @ w.T  # Gradient with respect to x
+    dx = dx.reshape(x.shape)  # Reshape dx to the original shape of x
+    dw = x_reshaped.T @ dout  # Gradient with respect to w
+    db = np.sum(dout, axis=0)  # Gradient with respect to b
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -78,6 +89,8 @@ def relu_forward(x):
     ###########################################################################
     # TODO: Implement the ReLU forward pass.                                  #
     ###########################################################################
+
+    out = np.maximum(0, x)  # Apply ReLU activation
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -101,6 +114,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the ReLU backward pass.                                 #
     ###########################################################################
+
+    dx = dout * (x > 0)  # Gradient of ReLU
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -714,6 +729,16 @@ def softmax_loss(x, y):
     ###########################################################################
     # TODO: Copy over your solution from A1.
     ###########################################################################
+
+    loss = 0.0
+    num_train = x.shape[0]
+    scores = x - np.max(x, axis=1, keepdims=True)  # For numerical stability
+    exp_scores = np.exp(scores)
+    p = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)  # Softmax probabilities
+    loss = -np.sum(np.log(p[np.arange(num_train), y])) / num_train
+    dx = p.copy()
+    dx[np.arange(num_train), y] -= 1
+    dx /= num_train
 
     ###########################################################################
     #                             END OF YOUR CODE                            #

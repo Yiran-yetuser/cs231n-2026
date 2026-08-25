@@ -1,6 +1,7 @@
 from __future__ import print_function
 from builtins import range
-from past.builtins import xrange
+
+# from past.builtins import xrange
 
 import numpy as np
 from random import randrange
@@ -112,9 +113,9 @@ def grad_check_sparse(f, x, analytic_grad, num_checks=10, h=1e-5):
     in this dimensions.
     """
 
+    # 该函数的功能: 对函数f在点x处的梯度进行数值计算，并与解析梯度进行比较
     for i in range(num_checks):
         ix = tuple([randrange(m) for m in x.shape])
-
         oldval = x[ix]
         x[ix] = oldval + h  # increment by h
         fxph = f(x)  # evaluate f(x + h)
